@@ -5,10 +5,11 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.Reader;
 import java.io.Writer;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -17,7 +18,7 @@ public class ExecuteServer {
 	public static final int bufferSize = 255;
 
 	public static void main(String[] args) throws IOException {
-		final ExecutorService pool;
+		final ExecutorService inPool;
 		final ServerSocket server;
 		int port = 6260;
 		byte[] pb = new byte[5];
@@ -34,11 +35,11 @@ public class ExecuteServer {
 		}
 		String var = "C";
 		String zusatz;
-		int threads = 8;
+		int threads = 4;
 		if (args.length > 0)
 			var = args[0].toUpperCase();
 		if (var == "C") {
-			pool = Executors.newCachedThreadPool();
+			inPool = Executors.newCachedThreadPool();
 			zusatz = "chached thread pool";
 		} else {
 
@@ -46,24 +47,21 @@ public class ExecuteServer {
 				threads = Integer.valueOf(var.trim()) * 2;
 			} catch (NumberFormatException nfe) {
 			}
-			pool = Executors.newFixedThreadPool(threads);
+			inPool = Executors.newFixedThreadPool(threads);
 			zusatz = threads + " thread pool";
 		}
+		final List<Socket> clientList = new ArrayList<>();
 		server = new ServerSocket(port);
-		Thread t1 = new Thread(new NetworkService(server, pool));
-		if (var == "C")
-			System.out.println("Created network service with a " + zusatz);
-		else
-			System.out.println("Created network service with a " + zusatz
-					+ " (" + (threads / 2) + " Clients)");
+		Thread t1 = new Thread(new NetworkService(server, inPool, clientList));
+		System.out.println("Created network service with a " + zusatz);
 		t1.start();
 		System.out.println("Server is Running at Port " + port + "...");
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
 				System.out.println("Strg+C, Stopping network service");
-				pool.shutdown();
+				inPool.shutdown();
 				try {
-					pool.awaitTermination(4L, TimeUnit.SECONDS);
+					inPool.awaitTermination(4L, TimeUnit.SECONDS);
 					if (!server.isClosed()) {
 						System.out.println("Server close");
 						server.close();
@@ -78,30 +76,30 @@ public class ExecuteServer {
 
 class NetworkService implements Runnable {
 	private final ServerSocket connector;
-	private final ExecutorService pool;
+	private final ExecutorService inPool;
+	private final List<Socket> clientList;
 
-	public NetworkService(ServerSocket connector, ExecutorService pool) {
+	public NetworkService(ServerSocket connector, ExecutorService inPool,
+			List<Socket> clientList) {
 		this.connector = connector;
-		this.pool = pool;
+		this.inPool = inPool;
+		this.clientList = clientList;
 	}
 
 	public void run() {
 		try {
 			while (true) {
 				Socket client = connector.accept();
-				System.out
-						.println("Client " + client.getInetAddress().toString()
-								+ " has Connected");
-				pool.execute(new ClientInputHandler(client));
-				pool.execute(new ClientOutputHandler(client));
+				clientList.add(client);
+				inPool.execute(new ClientInputHandler(client, clientList));
 			}
 		} catch (IOException ioe) {
 			System.out.println("-- Client Lost Connection:\n"
 					+ ioe.getMessage());
 		} finally {
-			pool.shutdown();
+			inPool.shutdown();
 			try {
-				pool.awaitTermination(4L, TimeUnit.SECONDS);
+				inPool.awaitTermination(4L, TimeUnit.SECONDS);
 				if (!connector.isClosed()) {
 					connector.close();
 					System.out.println("-- Stopped Connector:");
@@ -114,29 +112,52 @@ class NetworkService implements Runnable {
 }
 
 class ClientInputHandler implements Runnable {
-	private Socket client;
-	private String address;
+	private final Socket client;
+	private final List<Socket> clientList;
+	private String name;
 
-	public ClientInputHandler(Socket client) {
+	public ClientInputHandler(Socket client, List<Socket> clientList) {
 		this.client = client;
-		this.address = client.getInetAddress().toString();
+		this.name = client.getInetAddress().toString();
+		this.clientList = clientList;
 	}
 
 	public void run() {
 		try {
+			BufferedReader read = new BufferedReader(new InputStreamReader(
+					client.getInputStream()));
+			name = read.readLine().trim();
+			System.out.println("Client " + client.getInetAddress().toString()
+					+ " with name " + name + " has Connected");
 			while (true) {
 
-				Reader read = new BufferedReader(new InputStreamReader(
-						client.getInputStream()));
-				char[] buffer = new char[255];
-				read.read(buffer);
-				String message = new String(buffer).trim();
+				String message = read.readLine();
 				if (message != "")
-					System.out.println(message);
+					if(message.trim() != "")
+					if (message.startsWith("/")) {
+						message = message.trim();
+						if (message.toLowerCase().startsWith(
+								"/changeName".toLowerCase())) {
+							String[] para = message.split(" ");
+							if (para[1].trim() != "") {
+								String nameOld = name;
+								name = para[1];
+								for (Socket s : clientList)
+									new ClientOutputHandler(s, "-- " + nameOld
+											+ " änderte den Namen zu " + name)
+											.run();
+							}
+						}
+					} else {
+						System.out.println(name + ": " + message.trim());
+						for (Socket s : clientList)
+							new ClientOutputHandler(s, name + ": "
+									+ message.trim()).run();
+					}
 
 			}
 		} catch (IOException ioe) {
-			System.out.println("-- Client: " + address + " Lost Connection:\n"
+			System.out.println("-- Client: " + name + " Lost Connection:\n"
 					+ ioe.getMessage());
 		}
 		try {
@@ -149,26 +170,21 @@ class ClientInputHandler implements Runnable {
 }
 
 class ClientOutputHandler implements Runnable {
-	private Socket client;
+	private final Socket client;
+	private String message;
 
-	public ClientOutputHandler(Socket client) {
+	public ClientOutputHandler(Socket client, String message) {
 		this.client = client;
+		this.message = message;
 	}
 
 	public void run() {
-
 		try {
-			while (true) {
-				Writer out = new BufferedWriter(new OutputStreamWriter(
-						client.getOutputStream()));
-				out.write("Hello World\n");
-				out.flush();
-			}
+			Writer out = new BufferedWriter(new OutputStreamWriter(
+					client.getOutputStream()));
+			out.write(message + "\n");
+			out.flush();
 		} catch (IOException ioe) {
-		}
-		try {
-			client.close();
-		} catch (IOException e) {
 		}
 	}
 }
