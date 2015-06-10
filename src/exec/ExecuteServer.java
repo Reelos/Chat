@@ -129,6 +129,8 @@ class ClientInputHandler implements Runnable {
 			name = read.readLine().trim();
 			System.out.println("Client " + client.getInetAddress().toString()
 					+ " with name " + name + " has Connected");
+			for(Socket s: clientList)
+				new ClientOutputHandler(s,"-- "+name+" ist dem Chat beigetreten.");
 			while (true) {
 
 				String message = read.readLine();

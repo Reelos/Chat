@@ -14,6 +14,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.StrokeBorder;
 
@@ -26,6 +27,7 @@ public class ChatFrame extends JFrame {
 	private static final String version = "v0.001";
 
 	private JTextArea chatFlow;
+	private JScrollPane scroll;
 	private JTextField chatEnter;
 	private JButton send;
 	private JMenuItem connect;
@@ -68,9 +70,14 @@ public class ChatFrame extends JFrame {
 		add(contentPane, BorderLayout.CENTER);
 		{
 			chatFlow = new JTextArea(20, 40);
-			chatFlow.setBorder(new StrokeBorder(new BasicStroke(2)));
 			chatFlow.setEditable(false);
-			contentPane.add(new JScrollPane(chatFlow), BorderLayout.CENTER);
+			
+			scroll = new JScrollPane(chatFlow,
+					ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+			scroll.setBorder(new StrokeBorder(new BasicStroke(2)));
+			
+			contentPane.add(scroll, BorderLayout.CENTER);
 		}
 		{
 			JPanel sendPane = new JPanel();
@@ -89,6 +96,7 @@ public class ChatFrame extends JFrame {
 
 	public void applyToChat(String text) {
 		chatFlow.append(text + "\n");
+		scroll.getVerticalScrollBar().setValue(scroll.getVerticalScrollBar().getMaximum());
 	}
 
 	public String getMessage() {

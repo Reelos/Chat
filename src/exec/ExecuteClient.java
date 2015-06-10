@@ -121,6 +121,7 @@ public class ExecuteClient {
 															if (!server
 																	.isClosed())
 																try {
+																	out.close();
 																	server.close();
 																} catch (IOException e) {
 																} finally {
