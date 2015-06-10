@@ -2,10 +2,14 @@ package model;
 
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.Insets;
 
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -27,6 +31,7 @@ public class ChatFrame extends JFrame {
 	private static final String version = "v0.001";
 
 	private JTextArea chatFlow;
+	private JList<String> clients;
 	private JScrollPane scroll;
 	private JTextField chatEnter;
 	private JButton send;
@@ -37,6 +42,7 @@ public class ChatFrame extends JFrame {
 	public ChatFrame() {
 		super("Chat Client " + version);
 		super.setDefaultCloseOperation(EXIT_ON_CLOSE);
+		super.setResizable(false);
 
 		JMenuBar bar = new JMenuBar();
 		{
@@ -71,24 +77,36 @@ public class ChatFrame extends JFrame {
 		{
 			chatFlow = new JTextArea(20, 40);
 			chatFlow.setEditable(false);
-			
+
 			scroll = new JScrollPane(chatFlow,
 					ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
 					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 			scroll.setBorder(new StrokeBorder(new BasicStroke(2)));
-			
+
 			contentPane.add(scroll, BorderLayout.CENTER);
+
+			clients = new JList<>();
+			clients.setFixedCellWidth(100);
+			contentPane.add(new JScrollPane(clients,
+					ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER),
+					BorderLayout.EAST);
+
 		}
 		{
 			JPanel sendPane = new JPanel();
+			sendPane.setBorder(new EmptyBorder(5,0,0,0));
+			sendPane.setLayout(new BoxLayout(sendPane,BoxLayout.X_AXIS));
 			{
 				chatEnter = new JTextField(35);
 				sendPane.add(chatEnter);
 				send = new JButton("Senden");
 				send.setMargin(new Insets(0, 0, 0, 0));
 				sendPane.add(send);
+				sendPane.add(Box.createRigidArea(new Dimension(120,1)));
 			}
 			contentPane.add(sendPane, BorderLayout.SOUTH);
+
 		}
 		pack();
 		setLocationRelativeTo(null);
@@ -96,7 +114,8 @@ public class ChatFrame extends JFrame {
 
 	public void applyToChat(String text) {
 		chatFlow.append(text + "\n");
-		scroll.getVerticalScrollBar().setValue(scroll.getVerticalScrollBar().getMaximum());
+		scroll.getVerticalScrollBar().setValue(
+				scroll.getVerticalScrollBar().getMaximum());
 	}
 
 	public String getMessage() {
@@ -125,5 +144,9 @@ public class ChatFrame extends JFrame {
 
 	public JMenuItem getChangeName() {
 		return changeName;
+	}
+
+	public JList<String> getClientList() {
+		return clients;
 	}
 }

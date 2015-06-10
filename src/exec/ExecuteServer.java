@@ -50,11 +50,8 @@ public class ExecuteServer {
 			inPool = Executors.newFixedThreadPool(threads);
 			zusatz = threads + " thread pool";
 		}
-		final List<Socket> clientList = new ArrayList<>();
+		final List<ChatClient> clientList = new ArrayList<>();
 		server = new ServerSocket(port);
-		Thread t1 = new Thread(new NetworkService(server, inPool, clientList));
-		System.out.println("Created network service with a " + zusatz);
-		t1.start();
 		System.out.println("Server is Running at Port " + port + "...");
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
@@ -71,16 +68,19 @@ public class ExecuteServer {
 				}
 			}
 		});
+		Thread t1 = new Thread(new NetworkService(server, inPool, clientList));
+		System.out.println("Created network service with a " + zusatz);
+		t1.start();
 	}
 }
 
 class NetworkService implements Runnable {
 	private final ServerSocket connector;
 	private final ExecutorService inPool;
-	private final List<Socket> clientList;
+	private final List<ChatClient> clientList;
 
 	public NetworkService(ServerSocket connector, ExecutorService inPool,
-			List<Socket> clientList) {
+			List<ChatClient> clientList) {
 		this.connector = connector;
 		this.inPool = inPool;
 		this.clientList = clientList;
@@ -90,8 +90,11 @@ class NetworkService implements Runnable {
 		try {
 			while (true) {
 				Socket client = connector.accept();
-				clientList.add(client);
-				inPool.execute(new ClientInputHandler(client, clientList));
+				BufferedReader read = new BufferedReader(new InputStreamReader(
+						client.getInputStream()));
+				String name = read.readLine().trim();
+				clientList.add(new ChatClient(name, client));
+				inPool.execute(new ClientInputHandler(name, client, clientList));
 			}
 		} catch (IOException ioe) {
 			System.out.println("-- Client Lost Connection:\n"
@@ -113,29 +116,32 @@ class NetworkService implements Runnable {
 
 class ClientInputHandler implements Runnable {
 	private final Socket client;
-	private final List<Socket> clientList;
+	private final List<ChatClient> clientList;
 	private String name;
 
-	public ClientInputHandler(Socket client, List<Socket> clientList) {
+	public ClientInputHandler(String userName, Socket client,
+			List<ChatClient> clientList) {
 		this.client = client;
-		this.name = client.getInetAddress().toString();
+		this.name = userName;
 		this.clientList = clientList;
 	}
 
 	public void run() {
 		try {
-			BufferedReader read = new BufferedReader(new InputStreamReader(
-					client.getInputStream()));
-			name = read.readLine().trim();
+
 			System.out.println("Client " + client.getInetAddress().toString()
 					+ " with name " + name + " has Connected");
-			for(Socket s: clientList)
-				new ClientOutputHandler(s,"-- "+name+" ist dem Chat beigetreten.");
+			for (ChatClient s : clientList) {
+				new ClientOutputHandler(s.getConnection(), "-- " + name
+						+ " ist dem Chat beigetreten.").run();
+				new ClientOutputHandler(s.getConnection(), "#/list"
+						+ getClientList()).run();
+			}
 			while (true) {
-
+				BufferedReader read = new BufferedReader(new InputStreamReader(
+						client.getInputStream()));
 				String message = read.readLine();
-				if (message != "")
-					if(message.trim() != "")
+				if (message != "" && message != null && message.trim() != "")
 					if (message.startsWith("/")) {
 						message = message.trim();
 						if (message.toLowerCase().startsWith(
@@ -143,18 +149,48 @@ class ClientInputHandler implements Runnable {
 							String[] para = message.split(" ");
 							if (para[1].trim() != "") {
 								String nameOld = name;
+								for (ChatClient c : clientList) {
+									if (nameOld == c.getUserName()) {
+										c.setUserName(para[1]);
+										break;
+									}
+								}
 								name = para[1];
-								for (Socket s : clientList)
-									new ClientOutputHandler(s, "-- " + nameOld
-											+ " änderte den Namen zu " + name)
-											.run();
+								System.out.println("-- " + nameOld
+										+ " änderte den Namen zu " + name);
+								for (ChatClient s : clientList) {
+									new ClientOutputHandler(s.getConnection(),
+											"-- " + nameOld
+													+ " änderte den Namen zu "
+													+ name).run();
+									new ClientOutputHandler(s.getConnection(),
+											"#/list" + getClientList()).run();
+								}
 							}
+						}
+						if (message.toLowerCase().startsWith("/list")) {
+							new ClientOutputHandler(client, "#/list"
+									+ getClientList()).run();
+						}
+						if (message.toLowerCase().startsWith("/disconnect")) {
+							new ClientOutputHandler(client, "-- " + name
+									+ " ist jetzt Offline").run();
+							System.out.println("-- " + name + " disconnected");
+							client.close();
+							for (ChatClient c : clientList)
+								if (c.getUserName().equals(name)) {
+									clientList.remove(c);
+									break;
+								}
+							for (ChatClient c : clientList)
+								new ClientOutputHandler(c.getConnection(), "#/list"
+										+ getClientList()).run();
 						}
 					} else {
 						System.out.println(name + ": " + message.trim());
-						for (Socket s : clientList)
-							new ClientOutputHandler(s, name + ": "
-									+ message.trim()).run();
+						for (ChatClient s : clientList)
+							new ClientOutputHandler(s.getConnection(), name
+									+ ": " + message.trim()).run();
 					}
 
 			}
@@ -164,11 +200,27 @@ class ClientInputHandler implements Runnable {
 		}
 		try {
 			client.close();
+			for (ChatClient c : clientList)
+				if (c.getUserName() == name) {
+					clientList.remove(c);
+					break;
+				}
 		} catch (IOException e) {
 			System.out.println("-- Server Error:\n" + e.getMessage());
 		}
 	}
 
+	public String getClientList() {
+		String list = "";
+		for (ChatClient c : clientList) {
+			if (list == "")
+				list = c.getUserName();
+			else
+				list += ";" + c.getUserName();
+		}
+		list += "\n";
+		return list;
+	}
 }
 
 class ClientOutputHandler implements Runnable {
@@ -188,5 +240,31 @@ class ClientOutputHandler implements Runnable {
 			out.flush();
 		} catch (IOException ioe) {
 		}
+	}
+}
+
+class ChatClient {
+	private String userName;
+	private final Socket connection;
+
+	public ChatClient(String userName, Socket connection) {
+		this.userName = userName;
+		this.connection = connection;
+	}
+
+	public String getUserName() {
+		return userName;
+	}
+
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+
+	public Socket getConnection() {
+		return connection;
+	}
+
+	public boolean isOk() {
+		return connection.isConnected();
 	}
 }

@@ -44,6 +44,9 @@ public class ExecuteClient {
 														.getOutputStream()));
 										out.write(nameListener.getUserName()
 												+ "\n");
+										out.flush();
+										out.write("/list");
+										out.flush();
 										Thread t1 = new Thread(
 												new HostListener(server, chat));
 										t1.start();
@@ -121,6 +124,7 @@ public class ExecuteClient {
 															if (!server
 																	.isClosed())
 																try {
+																	out.write("/disconnect");
 																	out.close();
 																	server.close();
 																} catch (IOException e) {
@@ -138,6 +142,7 @@ public class ExecuteClient {
 																	chat.getChangeName()
 																			.addActionListener(
 																					nameListener);
+																	chat.getClientList().setListData(new String[]{});
 																}
 														});
 										chat.getConnectItem().setEnabled(false);
@@ -164,11 +169,18 @@ class HostListener implements Runnable {
 
 	public void run() {
 		try {
-			while (chat.isVisible()) {
+			while (chat.isShowing()) {
 				BufferedReader in = new BufferedReader(new InputStreamReader(
 						server.getInputStream()));
 				String readed = in.readLine().trim();
-				chat.applyToChat(readed);
+				if (readed.startsWith("#/")) {
+					if(readed.startsWith("#/list")){
+						String args = readed.substring(6);
+						String[] list = args.split(";");
+						chat.getClientList().setListData(list);
+					}
+				} else
+					chat.applyToChat(readed);
 			}
 		} catch (IOException e) {
 			chat.applyToChat("-- Lost Server Connection:\n" + e.getMessage());
