@@ -1,4 +1,4 @@
-package model;
+package main.java.model;
 
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;

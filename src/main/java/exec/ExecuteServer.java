@@ -1,4 +1,4 @@
-package exec;
+package main.java.exec;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

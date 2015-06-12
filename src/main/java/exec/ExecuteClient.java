@@ -1,4 +1,4 @@
-package exec;
+package main.java.exec;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,8 +15,8 @@ import java.util.Random;
 
 import javax.swing.JOptionPane;
 
-import model.ChatFrame;
-import model.ConnectDialog;
+import main.java.model.ChatFrame;
+import main.java.model.ConnectDialog;
 
 public class ExecuteClient {
 	public static void main(String[] args) throws UnknownHostException,
