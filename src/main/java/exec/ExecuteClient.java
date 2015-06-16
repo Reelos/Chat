@@ -39,17 +39,18 @@ public class ExecuteClient {
 												+ cd.getIP()
 												+ ":"
 												+ cd.getPort() + " aufgebaut.");
-										BufferedWriter out = new BufferedWriter(
-												new OutputStreamWriter(server
-														.getOutputStream()));
-										out.write(nameListener.getUserName()
-												+ "\n");
-										out.flush();
-										out.write("/list");
-										out.flush();
 										Thread t1 = new Thread(
 												new HostListener(server, chat));
 										t1.start();
+										BufferedWriter out = new BufferedWriter(
+												new OutputStreamWriter(server
+														.getOutputStream()));
+										out.write(nameListener.getUserName());
+										out.newLine();
+										out.flush();
+										out.write("/list");
+										out.newLine();
+										out.flush();
 										chat.getChangeName()
 												.removeActionListener(
 														nameListener);
@@ -184,6 +185,9 @@ class HostListener implements Runnable {
 			}
 		} catch (IOException e) {
 			chat.applyToChat("-- Lost Server Connection:\n" + e.getMessage());
+		} finally {
+			chat.applyToChat("-- Server Connection Closed --\n");
+			chat.getDisconnectItem().doClick();
 		}
 	}
 }

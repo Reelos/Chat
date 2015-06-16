@@ -71,7 +71,7 @@ public class ChatFrame extends JFrame {
 		add(bar, BorderLayout.NORTH);
 
 		JPanel contentPane = new JPanel();
-		contentPane.setLayout(new BorderLayout());
+		contentPane.setLayout(new BorderLayout(5, 5));
 		contentPane.setBorder(new EmptyBorder(10, 10, 10, 10));
 		add(contentPane, BorderLayout.CENTER);
 		{
@@ -87,23 +87,24 @@ public class ChatFrame extends JFrame {
 
 			clients = new JList<>();
 			clients.setFixedCellWidth(100);
-			contentPane.add(new JScrollPane(clients,
+			JScrollPane clientScroll = new JScrollPane(clients,
 					ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
-					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER),
-					BorderLayout.EAST);
+					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+			clientScroll.setBorder(new StrokeBorder(new BasicStroke(2)));
+			contentPane.add(clientScroll, BorderLayout.EAST);
 
 		}
 		{
 			JPanel sendPane = new JPanel();
-			sendPane.setBorder(new EmptyBorder(5,0,0,0));
-			sendPane.setLayout(new BoxLayout(sendPane,BoxLayout.X_AXIS));
+			sendPane.setBorder(new EmptyBorder(5, 0, 0, 0));
+			sendPane.setLayout(new BoxLayout(sendPane, BoxLayout.X_AXIS));
 			{
 				chatEnter = new JTextField(35);
 				sendPane.add(chatEnter);
 				send = new JButton("Senden");
 				send.setMargin(new Insets(0, 0, 0, 0));
 				sendPane.add(send);
-				sendPane.add(Box.createRigidArea(new Dimension(120,1)));
+				sendPane.add(Box.createRigidArea(new Dimension(120, 1)));
 			}
 			contentPane.add(sendPane, BorderLayout.SOUTH);
 

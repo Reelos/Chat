@@ -10,6 +10,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -20,19 +21,15 @@ public class ExecuteServer {
 	public static void main(String[] args) throws IOException {
 		final ExecutorService inPool;
 		final ServerSocket server;
-		int port = 6260;
-		byte[] pb = new byte[5];
+		final int port;
+		Scanner inline = new Scanner(System.in);
 		System.out.println("Enter Port Number (0 - 65500):");
-		System.in.read(pb, 0, 5);
-		char[] wpb = new char[5];
-		for (int i = 0; i < pb.length; i++) {
-			wpb[i] = (char) pb[i];
-		}
-		String sPort = new String(wpb).trim();
+		String sPort = inline.nextLine().trim();
 		try {
 			port = Integer.valueOf(sPort);
-		} catch (NumberFormatException nfe) {
+		} finally {
 		}
+
 		String var = "C";
 		String zusatz;
 		int threads = 4;
@@ -53,24 +50,30 @@ public class ExecuteServer {
 		final List<ChatClient> clientList = new ArrayList<>();
 		server = new ServerSocket(port);
 		System.out.println("Server is Running at Port " + port + "...");
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			public void run() {
-				System.out.println("Strg+C, Stopping network service");
-				inPool.shutdown();
-				try {
-					inPool.awaitTermination(4L, TimeUnit.SECONDS);
-					if (!server.isClosed()) {
-						System.out.println("Server close");
-						server.close();
-					}
-				} catch (IOException e) {
-				} catch (InterruptedException ei) {
-				}
-			}
-		});
 		Thread t1 = new Thread(new NetworkService(server, inPool, clientList));
 		System.out.println("Created network service with a " + zusatz);
 		t1.start();
+		if (inline.nextLine().trim().toLowerCase().equals("exit")) {
+			System.out.println("-- Server shutted down");
+			inPool.shutdown();
+			try {
+				inPool.awaitTermination(4L, TimeUnit.SECONDS);
+				if (!server.isClosed()) {
+					System.out.println("-- Server closed");
+					server.close();
+					System.out.println("-- Disconnecting Clients");
+					clientList.forEach(a -> {
+						try {
+							a.getConnection().close();
+						} catch (Exception e) {
+						}
+					});
+				}
+			} catch (IOException e) {
+			} catch (InterruptedException ei) {
+			}
+		}
+		inline.close();
 	}
 }
 
@@ -94,7 +97,8 @@ class NetworkService implements Runnable {
 						client.getInputStream()));
 				String name = read.readLine().trim();
 				clientList.add(new ChatClient(name, client));
-				inPool.execute(new ClientInputHandler(name, client, clientList));
+				inPool.execute(new ClientInputHandler(clientList.get(clientList
+						.size() - 1), clientList));
 			}
 		} catch (IOException ioe) {
 			System.out.println("-- Client Lost Connection:\n"
@@ -115,31 +119,28 @@ class NetworkService implements Runnable {
 }
 
 class ClientInputHandler implements Runnable {
-	private final Socket client;
+	private final ChatClient client;
 	private final List<ChatClient> clientList;
-	private String name;
 
-	public ClientInputHandler(String userName, Socket client,
-			List<ChatClient> clientList) {
+	public ClientInputHandler(ChatClient client, List<ChatClient> clientList) {
 		this.client = client;
-		this.name = userName;
 		this.clientList = clientList;
 	}
 
 	public void run() {
 		try {
 
-			System.out.println("Client " + client.getInetAddress().toString()
-					+ " with name " + name + " has Connected");
+			System.out.println("Client "
+					+ client.getConnection().getInetAddress().toString()
+					+ " with name " + client.getUserName() + " has Connected");
 			for (ChatClient s : clientList) {
-				new ClientOutputHandler(s.getConnection(), "-- " + name
-						+ " ist dem Chat beigetreten.").run();
-				new ClientOutputHandler(s.getConnection(), "#/list"
-						+ getClientList()).run();
+				s.send("-- " + client.getUserName()
+						+ " ist dem Chat beigetreten.");
+				s.send("#/list" + getClientList());
 			}
 			while (true) {
 				BufferedReader read = new BufferedReader(new InputStreamReader(
-						client.getInputStream()));
+						client.getConnection().getInputStream()));
 				String message = read.readLine();
 				if (message != "" && message != null && message.trim() != "")
 					if (message.startsWith("/")) {
@@ -147,64 +148,90 @@ class ClientInputHandler implements Runnable {
 						if (message.toLowerCase().startsWith(
 								"/changeName".toLowerCase())) {
 							String[] para = message.split(" ");
-							if (para[1].trim() != "") {
-								String nameOld = name;
-								for (ChatClient c : clientList) {
-									if (nameOld == c.getUserName()) {
-										c.setUserName(para[1]);
-										break;
+							if (para.length > 1) {
+								if (para[1].trim() != "") {
+									String nameOld = client.getUserName();
+									client.setUserName(para[1]);
+									System.out.println("-- " + nameOld
+											+ " änderte den Namen zu "
+											+ client.getUserName());
+									for (ChatClient s : clientList) {
+
+										s.send("-- " + nameOld
+												+ " änderte den Namen zu "
+												+ client.getUserName());
+
+										s.send("#/list" + getClientList());
 									}
 								}
-								name = para[1];
-								System.out.println("-- " + nameOld
-										+ " änderte den Namen zu " + name);
-								for (ChatClient s : clientList) {
-									new ClientOutputHandler(s.getConnection(),
-											"-- " + nameOld
-													+ " änderte den Namen zu "
-													+ name).run();
-									new ClientOutputHandler(s.getConnection(),
-											"#/list" + getClientList()).run();
-								}
+							} else {
+								client.send("Feher: Falsche Syntax: /changeName <UserName>");
 							}
 						}
 						if (message.toLowerCase().startsWith("/list")) {
-							new ClientOutputHandler(client, "#/list"
-									+ getClientList()).run();
+							client.send("#/list" + getClientList());
 						}
 						if (message.toLowerCase().startsWith("/disconnect")) {
-							new ClientOutputHandler(client, "-- " + name
-									+ " ist jetzt Offline").run();
-							System.out.println("-- " + name + " disconnected");
-							client.close();
+							client.send("-- " + client.getUserName()
+									+ " ist jetzt Offline");
+							System.out.println("-- " + client.getUserName()
+									+ " disconnected");
+							client.getConnection().close();
+
+							clientList.remove(client);
+
 							for (ChatClient c : clientList)
-								if (c.getUserName().equals(name)) {
-									clientList.remove(c);
-									break;
+								c.send("#/list" + getClientList());
+						}
+						if (message.toLowerCase().startsWith("/to")) {
+							String[] para = message.split(" ");
+							if(para.length > 2) {
+								if(!para[1].equals(client.getUserName())){
+									ChatClient toTarget = null;
+									for(ChatClient cc: clientList){
+										if(cc.getUserName().equals(para[1])){
+											toTarget = cc;
+											break;
+										}
+									}
+									if(!(toTarget == null)) {
+										if(!para[2].isEmpty()) {
+											String whisper = "";
+											for(int i=2;i<para.length;i++){
+												if(whisper.isEmpty())
+													whisper += para[i];
+												else
+													whisper += " "+para[i];
+											}
+											toTarget.send(whisper);
+										}else{
+											client.send("Du kannst keine Leeren Nachrichten verschicken");
+										}
+									}else{
+										client.send("Dieser User Existiert nicht");
+									}
+								}else{
+									client.send("Du kannst keine Nachrichten an dich Selbet verschicken!");
 								}
-							for (ChatClient c : clientList)
-								new ClientOutputHandler(c.getConnection(), "#/list"
-										+ getClientList()).run();
+							}else{
+								client.send("Falsche Syntax: /to <UserName> <Message>");
+							}
 						}
 					} else {
-						System.out.println(name + ": " + message.trim());
+						System.out.println(client.getUserName() + ": "
+								+ message.trim());
 						for (ChatClient s : clientList)
-							new ClientOutputHandler(s.getConnection(), name
-									+ ": " + message.trim()).run();
+							s.send(client.getUserName() + ": " + message.trim());
 					}
 
 			}
 		} catch (IOException ioe) {
-			System.out.println("-- Client: " + name + " Lost Connection:\n"
-					+ ioe.getMessage());
+			System.out.println("-- Client: " + client.getUserName()
+					+ " Lost Connection:\n" + ioe.getMessage());
 		}
 		try {
-			client.close();
-			for (ChatClient c : clientList)
-				if (c.getUserName() == name) {
-					clientList.remove(c);
-					break;
-				}
+			client.getConnection().close();
+			clientList.remove(client);
 		} catch (IOException e) {
 			System.out.println("-- Server Error:\n" + e.getMessage());
 		}
@@ -223,16 +250,14 @@ class ClientInputHandler implements Runnable {
 	}
 }
 
-class ClientOutputHandler implements Runnable {
+class ClientOutputHandler {
 	private final Socket client;
-	private String message;
 
-	public ClientOutputHandler(Socket client, String message) {
+	public ClientOutputHandler(Socket client) {
 		this.client = client;
-		this.message = message;
 	}
 
-	public void run() {
+	public void send(String message) {
 		try {
 			Writer out = new BufferedWriter(new OutputStreamWriter(
 					client.getOutputStream()));
@@ -246,10 +271,12 @@ class ClientOutputHandler implements Runnable {
 class ChatClient {
 	private String userName;
 	private final Socket connection;
+	private ClientOutputHandler out;
 
 	public ChatClient(String userName, Socket connection) {
 		this.userName = userName;
 		this.connection = connection;
+		this.out = new ClientOutputHandler(connection);
 	}
 
 	public String getUserName() {
@@ -266,5 +293,9 @@ class ChatClient {
 
 	public boolean isOk() {
 		return connection.isConnected();
+	}
+
+	public void send(String message) {
+		out.send(message);
 	}
 }
