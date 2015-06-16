@@ -30,8 +30,9 @@ public class ExecuteClient {
 				.addActionListener(
 						a -> {
 							cd.setVisible(true);
-							if (cd.getPort() >= 0)
+							if (cd.getPort() >= 0 && !cd.getIP().isEmpty())
 								try {
+									chat.resetChat();
 									Socket server = new Socket(cd.getIP(), cd
 											.getPort());
 									if (server.isConnected()) {

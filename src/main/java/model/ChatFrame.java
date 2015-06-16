@@ -113,6 +113,9 @@ public class ChatFrame extends JFrame {
 		setLocationRelativeTo(null);
 	}
 
+	public void resetChat() {
+		chatFlow.setText("");
+	}
 	public void applyToChat(String text) {
 		chatFlow.append(text + "\n");
 		scroll.getVerticalScrollBar().setValue(

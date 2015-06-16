@@ -172,8 +172,10 @@ class ClientInputHandler implements Runnable {
 							client.send("#/list" + getClientList());
 						}
 						if (message.toLowerCase().startsWith("/disconnect")) {
-							client.send("-- " + client.getUserName()
+							for(ChatClient s: clientList){
+							s.send("-- " + client.getUserName()
 									+ " ist jetzt Offline");
+							}
 							System.out.println("-- " + client.getUserName()
 									+ " disconnected");
 							client.getConnection().close();
@@ -203,18 +205,21 @@ class ClientInputHandler implements Runnable {
 												else
 													whisper += " "+para[i];
 											}
-											toTarget.send(whisper);
+											toTarget.send(client.getUserName()+"<Whisper>: "+whisper);
+											client.send(client.getUserName()+"<Whisper>: "+whisper);
+											toTarget.send("#/to "+client.getUserName()+"<Whisper>: "+whisper);
+											client.send("#/to "+ client.getUserName()+"<Whisper>: "+whisper);
 										}else{
-											client.send("Du kannst keine Leeren Nachrichten verschicken");
+											client.send("-- Du kannst keine Leeren Nachrichten verschicken");
 										}
 									}else{
-										client.send("Dieser User Existiert nicht");
+										client.send("-- Dieser User Existiert nicht");
 									}
 								}else{
-									client.send("Du kannst keine Nachrichten an dich Selbet verschicken!");
+									client.send("-- Du kannst keine Nachrichten an dich Selbet verschicken!");
 								}
 							}else{
-								client.send("Falsche Syntax: /to <UserName> <Message>");
+								client.send("-- Falsche Syntax: /to <UserName> <Message>");
 							}
 						}
 					} else {
