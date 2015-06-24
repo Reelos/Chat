@@ -1,4 +1,4 @@
-package test.java.exec;
+package de.reelos.server;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -92,9 +92,13 @@ class NetworkService implements Runnable {
 				Socket client = connector.accept();
 				BufferedReader read = new BufferedReader(new InputStreamReader(
 						client.getInputStream()));
-				String name = read.readLine().trim();
-				clientList.add(new ChatClient(name, client));
-				inPool.execute(new ClientInputHandler(name, client, clientList));
+				String name = read.readLine();
+				if (name != null) {
+					name = name.trim();
+					clientList.add(new ChatClient(name, client));
+					inPool.execute(new ClientInputHandler(name, client,
+							clientList));
+				}
 			}
 		} catch (IOException ioe) {
 			System.out.println("-- Client Lost Connection:\n"
@@ -183,8 +187,8 @@ class ClientInputHandler implements Runnable {
 									break;
 								}
 							for (ChatClient c : clientList)
-								new ClientOutputHandler(c.getConnection(), "#/list"
-										+ getClientList()).run();
+								new ClientOutputHandler(c.getConnection(),
+										"#/list" + getClientList()).run();
 						}
 					} else {
 						System.out.println(name + ": " + message.trim());
@@ -201,7 +205,7 @@ class ClientInputHandler implements Runnable {
 		try {
 			client.close();
 			for (ChatClient c : clientList)
-				if (c.getUserName() == name) {
+				if (c.getUserName().matches(name)) {
 					clientList.remove(c);
 					break;
 				}

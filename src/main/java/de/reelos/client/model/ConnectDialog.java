@@ -1,10 +1,8 @@
-package main.java.model;
+package de.reelos.client.model;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Window;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -26,7 +24,6 @@ public class ConnectDialog extends JDialog {
 	private int port = 6260;
 	private JTextField ipField;
 	private JTextField portField;
-	private JButton connect;
 
 	public ConnectDialog(Window parent) {
 		super(parent, "Verbinden...");
@@ -42,24 +39,6 @@ public class ConnectDialog extends JDialog {
 			{
 				JLabel ipLabel = new JLabel("IP-Adresse");
 				ipField = new JTextField(ip, 20);
-				ipField.addKeyListener( new KeyListener(){
-
-					@Override
-					public void keyPressed(KeyEvent arg0) {
-					}
-
-					@Override
-					public void keyReleased(KeyEvent arg0) {
-						if(arg0.getKeyCode() == KeyEvent.VK_ENTER){
-							connect.doClick();
-						}
-					}
-
-					@Override
-					public void keyTyped(KeyEvent arg0) {
-					}
-					
-				});
 				mainPane.add(ipLabel);
 				mainPane.add(ipField);
 				mainPane.add(Box.createRigidArea(new Dimension(4, 5)));
@@ -78,7 +57,7 @@ public class ConnectDialog extends JDialog {
 					dispose();
 				});
 				buttonPane.add(close);
-				connect = new JButton("Verbinden");
+				JButton connect = new JButton("Verbinden");
 				connect.addActionListener(a -> {
 					ip = ipField.getText();
 					try {

@@ -1,4 +1,4 @@
-package test.java.model;
+package de.reelos.client.model;
 
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
@@ -86,19 +86,21 @@ public class WhisperChatDialog extends JDialog {
 				}
 				chatField.setText("");
 			});
-			chatField.addKeyListener(new KeyListener(){
+			chatField.addKeyListener(new KeyListener() {
 				@Override
 				public void keyPressed(KeyEvent arg0) {
 				}
+
 				@Override
 				public void keyReleased(KeyEvent arg0) {
-					if(arg0.getKeyCode() == KeyEvent.VK_ENTER)
+					if (arg0.getKeyCode() == KeyEvent.VK_ENTER)
 						chatButton.doClick();
 				}
+
 				@Override
 				public void keyTyped(KeyEvent arg0) {
 				}
-				
+
 			});
 			chatPane.add(chatField);
 			chatPane.add(chatButton);

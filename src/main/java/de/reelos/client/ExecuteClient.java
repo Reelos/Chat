@@ -1,4 +1,4 @@
-package test.java.exec;
+package de.reelos.client;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,8 +15,8 @@ import java.util.Random;
 
 import javax.swing.JOptionPane;
 
-import test.java.model.ChatFrame;
-import test.java.model.ConnectDialog;
+import de.reelos.client.model.ChatFrame;
+import de.reelos.client.model.ConnectDialog;
 
 public class ExecuteClient {
 	public static void main(String[] args) throws UnknownHostException,
@@ -142,7 +142,9 @@ public class ExecuteClient {
 																	chat.getChangeName()
 																			.addActionListener(
 																					nameListener);
-																	chat.getClientList().setListData(new String[]{});
+																	chat.getClientList()
+																			.setListData(
+																					new String[] {});
 																}
 														});
 										chat.getConnectItem().setEnabled(false);
@@ -172,15 +174,18 @@ class HostListener implements Runnable {
 			while (chat.isShowing()) {
 				BufferedReader in = new BufferedReader(new InputStreamReader(
 						server.getInputStream()));
-				String readed = in.readLine().trim();
-				if (readed.startsWith("#/")) {
-					if(readed.startsWith("#/list")){
-						String args = readed.substring(6);
-						String[] list = args.split(";");
-						chat.getClientList().setListData(list);
-					}
-				} else
-					chat.applyToChat(readed);
+				String readed = in.readLine();
+				if (readed != null) {
+					readed = readed.trim();
+					if (readed.startsWith("#/")) {
+						if (readed.startsWith("#/list")) {
+							String args = readed.substring(6);
+							String[] list = args.split(";");
+							chat.getClientList().setListData(list);
+						}
+					} else
+						chat.applyToChat(readed);
+				}
 			}
 		} catch (IOException e) {
 			chat.applyToChat("-- Lost Server Connection:\n" + e.getMessage());
