@@ -1,4 +1,4 @@
-package de.reelos.client.model;
+package de.reelos.model;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;

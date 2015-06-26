@@ -1,4 +1,4 @@
-package de.reelos.server;
+package de.reelos;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

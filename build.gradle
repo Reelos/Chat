@@ -1,23 +1,8 @@
-defaultTasks 'clean', 'fatJar', 'build'
+allprojects{
 
-apply plugin: 'java'
-apply plugin: 'eclipse'
-//apply plugin: 'findbugs'
+	apply plugin: 'java'
+	apply plugin: 'eclipse'
+	apply plugin: 'findbugs'
 
-version = '0.001a-SNAP'
-
-task fatJar(type: Jar, dependsOn: 'build') {
-	manifest {
-		attributes 'Implementation-Title': "$project.name-Core FAT",
-			'Implementation-Version': version
-	}
-	baseName = project.name + '-core'
-}
-
-task client (type: Jar, dependsOn: 'build') {
-	
-}
-
-repositories{
-	mavenCentral()
+	version = '0.001a-SNAP'
 }

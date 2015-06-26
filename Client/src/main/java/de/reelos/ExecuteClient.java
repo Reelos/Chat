@@ -1,4 +1,4 @@
-package de.reelos.client;
+package de.reelos;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,8 +15,8 @@ import java.util.Random;
 
 import javax.swing.JOptionPane;
 
-import de.reelos.client.model.ChatFrame;
-import de.reelos.client.model.ConnectDialog;
+import de.reelos.model.ChatFrame;
+import de.reelos.model.ConnectDialog;
 
 public class ExecuteClient {
 	public static void main(String[] args) throws UnknownHostException,
