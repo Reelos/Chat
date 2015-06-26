@@ -44,8 +44,7 @@ public class WhisperChatDialog extends JDialog {
 		setModal(false);
 		this.toName = toName;
 		try {
-			this.out = new BufferedWriter(new OutputStreamWriter(
-					socket.getOutputStream()));
+			this.out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 		} catch (IOException e) {
 		}
 
@@ -64,9 +63,7 @@ public class WhisperChatDialog extends JDialog {
 			chatArea.setEditable(false);
 			chatArea.setLineWrap(true);
 			chatArea.setWrapStyleWord(true);
-			chatScroll = new JScrollPane(chatArea,
-					ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
-					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+			chatScroll = new JScrollPane(chatArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 			chatScroll.setBorder(new StrokeBorder(new BasicStroke(2)));
 			add(chatScroll, BorderLayout.CENTER);
 		}
@@ -113,8 +110,7 @@ public class WhisperChatDialog extends JDialog {
 
 	public void applyToChat(String text) {
 		chatArea.append(text + "\n");
-		chatScroll.getVerticalScrollBar().setValue(
-				chatScroll.getVerticalScrollBar().getMaximum());
+		chatScroll.getVerticalScrollBar().setValue(chatScroll.getVerticalScrollBar().getMaximum());
 		if (!isActive()) {
 			getToolkit().beep();
 			toFront();

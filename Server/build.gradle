@@ -2,6 +2,6 @@ jar {
 	manifest {
 		attributes 'Implementation-Title': "$project.name",
 			'Implementation-Version': version,
-			'Main-Class': 'de.reelos.ExecuteClient'
+			'Main-Class': 'de.reelos.ExecuteServer'
 	}
 }

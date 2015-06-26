@@ -30,9 +30,9 @@ public class ChatFrame extends JFrame {
 	private static final long serialVersionUID = 6385358475901470704L;
 	private static final String version = "v0.001";
 
-	private JTextArea chatFlow;
-	private JList<String> clients;
-	private JScrollPane scroll;
+	private JTextArea chatArea;
+	private JList<String> clientList;
+	private JScrollPane chatScroll;
 	private JTextField chatEnter;
 	private JButton send;
 	private JMenuItem connect;
@@ -75,22 +75,21 @@ public class ChatFrame extends JFrame {
 		contentPane.setBorder(new EmptyBorder(10, 10, 10, 10));
 		add(contentPane, BorderLayout.CENTER);
 		{
-			chatFlow = new JTextArea(20, 40);
-			chatFlow.setEditable(false);
+			chatArea = new JTextArea(20, 40);
+			chatArea.setEditable(false);
 
-			scroll = new JScrollPane(chatFlow,
-					ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+			chatScroll = new JScrollPane(chatArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+			chatScroll.setBorder(new StrokeBorder(new BasicStroke(2)));
+
+			contentPane.add(chatScroll, BorderLayout.CENTER);
+
+			clientList = new JList<>();
+			clientList.setFixedCellWidth(100);
+
+			JScrollPane clientScroll = new JScrollPane(clientList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
 					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-			scroll.setBorder(new StrokeBorder(new BasicStroke(2)));
-
-			contentPane.add(scroll, BorderLayout.CENTER);
-
-			clients = new JList<>();
-			clients.setFixedCellWidth(100);
-			contentPane.add(new JScrollPane(clients,
-					ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
-					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER),
-					BorderLayout.EAST);
+			clientScroll.setBorder(new StrokeBorder(new BasicStroke(2)));
+			contentPane.add(clientScroll, BorderLayout.EAST);
 
 		}
 		{
@@ -113,9 +112,8 @@ public class ChatFrame extends JFrame {
 	}
 
 	public void applyToChat(String text) {
-		chatFlow.append(text + "\n");
-		scroll.getVerticalScrollBar().setValue(
-				scroll.getVerticalScrollBar().getMaximum());
+		chatArea.append(text + "\n");
+		chatScroll.getVerticalScrollBar().setValue(chatScroll.getVerticalScrollBar().getMaximum());
 	}
 
 	public String getMessage() {
@@ -147,6 +145,6 @@ public class ChatFrame extends JFrame {
 	}
 
 	public JList<String> getClientList() {
-		return clients;
+		return clientList;
 	}
 }

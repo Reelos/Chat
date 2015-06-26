@@ -19,144 +19,97 @@ import de.reelos.model.ChatFrame;
 import de.reelos.model.ConnectDialog;
 
 public class ExecuteClient {
-	public static void main(String[] args) throws UnknownHostException,
-			IOException {
+	public static void main(String[] args) throws UnknownHostException, IOException {
 		InitChangeName nameListener = new InitChangeName();
 		ChatFrame chat = new ChatFrame();
 		chat.getChangeName().addActionListener(nameListener);
 		chat.setVisible(true);
 		ConnectDialog cd = new ConnectDialog(chat);
-		chat.getConnectItem()
-				.addActionListener(
-						a -> {
-							cd.setVisible(true);
-							if (cd.getPort() >= 0)
+		chat.getConnectItem().addActionListener(a -> {
+			cd.setVisible(true);
+			if (cd.getPort() >= 0)
+				try {
+					Socket server = new Socket(cd.getIP(), cd.getPort());
+					if (server.isConnected()) {
+						chat.applyToChat("-- Verbindung zu Server " + cd.getIP() + ":" + cd.getPort() + " aufgebaut.");
+						BufferedWriter out = new BufferedWriter(new OutputStreamWriter(server.getOutputStream()));
+						out.write(nameListener.getUserName());
+						out.newLine();
+						out.flush();
+						Thread t1 = new Thread(new HostListener(server, chat));
+						t1.start();
+						out.write("/list");
+						out.newLine();
+						out.flush();
+						chat.getChangeName().removeActionListener(nameListener);
+						ActionListener runNameListener = new ActionListener() {
+							public void actionPerformed(ActionEvent e) {
+								nameListener.setUserName(JOptionPane.showInputDialog(null, "Geben sie einen Namen ein", nameListener.getUserName()));
 								try {
-									Socket server = new Socket(cd.getIP(), cd
-											.getPort());
-									if (server.isConnected()) {
-										chat.applyToChat("-- Verbindung zu Server "
-												+ cd.getIP()
-												+ ":"
-												+ cd.getPort() + " aufgebaut.");
-										BufferedWriter out = new BufferedWriter(
-												new OutputStreamWriter(server
-														.getOutputStream()));
-										out.write(nameListener.getUserName()
-												+ "\n");
+									out.write("/changeName " + nameListener.getUserName() + "\n");
+									out.flush();
+								} catch (IOException f) {
+
+								}
+							}
+						};
+						chat.getChangeName().addActionListener(runNameListener);
+						chat.getSendButton().addActionListener(b -> {
+							try {
+								out.write(chat.getMessage() + "\n");
+								chat.setMessage("");
+								out.flush();
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						});
+						chat.getInputField().addKeyListener(new KeyListener() {
+
+							@Override
+							public void keyPressed(KeyEvent arg0) {
+							}
+
+							@Override
+							public void keyReleased(KeyEvent arg0) {
+								if (arg0.getKeyCode() == KeyEvent.VK_ENTER)
+									try {
+										out.write(chat.getMessage() + "\n");
+										chat.setMessage("");
 										out.flush();
-										out.write("/list");
-										out.flush();
-										Thread t1 = new Thread(
-												new HostListener(server, chat));
-										t1.start();
-										chat.getChangeName()
-												.removeActionListener(
-														nameListener);
-										ActionListener runNameListener = new ActionListener() {
-											public void actionPerformed(
-													ActionEvent e) {
-												nameListener
-														.setUserName(JOptionPane
-																.showInputDialog(
-																		null,
-																		"Geben sie einen Namen ein",
-																		nameListener
-																				.getUserName()));
-												try {
-													out.write("/changeName "
-															+ nameListener
-																	.getUserName()
-															+ "\n");
-													out.flush();
-												} catch (IOException f) {
-
-												}
-											}
-										};
-										chat.getChangeName().addActionListener(
-												runNameListener);
-										chat.getSendButton().addActionListener(
-												b -> {
-													try {
-														out.write(chat
-																.getMessage()
-																+ "\n");
-														chat.setMessage("");
-														out.flush();
-													} catch (Exception e) {
-														e.printStackTrace();
-													}
-												});
-										chat.getInputField().addKeyListener(
-												new KeyListener() {
-
-													@Override
-													public void keyPressed(
-															KeyEvent arg0) {
-													}
-
-													@Override
-													public void keyReleased(
-															KeyEvent arg0) {
-														if (arg0.getKeyCode() == KeyEvent.VK_ENTER)
-															try {
-																out.write(chat
-																		.getMessage()
-																		+ "\n");
-																chat.setMessage("");
-																out.flush();
-															} catch (Exception e) {
-																e.printStackTrace();
-															}
-
-													}
-
-													@Override
-													public void keyTyped(
-															KeyEvent arg0) {
-													}
-
-												});
-										chat.getDisconnectItem()
-												.addActionListener(
-														b -> {
-															if (!server
-																	.isClosed())
-																try {
-																	out.write("/disconnect");
-																	out.close();
-																	server.close();
-																} catch (IOException e) {
-																} finally {
-																	chat.applyToChat("-- Verbindung zu Server getrennt");
-																	chat.getConnectItem()
-																			.setEnabled(
-																					true);
-																	chat.getDisconnectItem()
-																			.setEnabled(
-																					false);
-																	chat.getChangeName()
-																			.removeActionListener(
-																					runNameListener);
-																	chat.getChangeName()
-																			.addActionListener(
-																					nameListener);
-																	chat.getClientList()
-																			.setListData(
-																					new String[] {});
-																}
-														});
-										chat.getConnectItem().setEnabled(false);
-										chat.getDisconnectItem().setEnabled(
-												true);
+									} catch (Exception e) {
+										e.printStackTrace();
 									}
-								} catch (IOException ce) {
-									chat.applyToChat("-- Kein Server unter "
-											+ cd.getIP() + ":" + cd.getPort()
-											+ " gefunden");
+
+							}
+
+							@Override
+							public void keyTyped(KeyEvent arg0) {
+							}
+
+						});
+						chat.getDisconnectItem().addActionListener(b -> {
+							if (!server.isClosed())
+								try {
+									out.write("/disconnect");
+									out.close();
+									server.close();
+								} catch (IOException e) {
+								} finally {
+									chat.applyToChat("-- Verbindung zu Server getrennt");
+									chat.getConnectItem().setEnabled(true);
+									chat.getDisconnectItem().setEnabled(false);
+									chat.getChangeName().removeActionListener(runNameListener);
+									chat.getChangeName().addActionListener(nameListener);
+									chat.getClientList().setListData(new String[] {});
 								}
 						});
+						chat.getConnectItem().setEnabled(false);
+						chat.getDisconnectItem().setEnabled(true);
+					}
+				} catch (IOException ce) {
+					chat.applyToChat("-- Kein Server unter " + cd.getIP() + ":" + cd.getPort() + " gefunden");
+				}
+		});
 	}
 }
 
@@ -172,8 +125,7 @@ class HostListener implements Runnable {
 	public void run() {
 		try {
 			while (chat.isShowing()) {
-				BufferedReader in = new BufferedReader(new InputStreamReader(
-						server.getInputStream()));
+				BufferedReader in = new BufferedReader(new InputStreamReader(server.getInputStream()));
 				String readed = in.readLine();
 				if (readed != null) {
 					readed = readed.trim();
@@ -198,8 +150,7 @@ class InitChangeName implements ActionListener {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		this.userName = JOptionPane.showInputDialog(null,
-				"Geben sie einen Namen ein", this.userName);
+		this.userName = JOptionPane.showInputDialog(null, "Geben sie einen Namen ein", this.userName);
 	}
 
 	public String getUserName() {
