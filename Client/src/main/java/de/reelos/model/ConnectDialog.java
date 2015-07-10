@@ -91,8 +91,17 @@ public class ConnectDialog extends JDialog {
 		setLocationRelativeTo(parent);
 	}
 
+	public JButton ConnectButton(){
+		return connectButton;
+	}
+	
 	public String getIP() {
 		return ip;
+	}
+	
+	public void setIP(String adress){
+		ipField.setText(adress);
+		this.ip = adress;
 	}
 
 	public int getPort() {

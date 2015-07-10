@@ -90,7 +90,7 @@ class NetworkService implements Runnable {
 			public void run() {
 				while (true) {
 					clientList.forEach(c -> {
-						if (c.getConnection().isClosed()){
+						if (c.getConnection().isClosed()) {
 							clientList.remove(c);
 						}
 					});
@@ -162,7 +162,7 @@ class ClientInputHandler implements Runnable {
 
 			while (true) {
 				String message = client.receive();
-				if (message != null){
+				if (message != null) {
 					if (!message.equals("") && !message.trim().equals(""))
 						if (message.startsWith("/")) {
 							message = message.trim();
@@ -213,6 +213,7 @@ class ClientInputHandler implements Runnable {
 											receivingClient.send("Whisper from " + sender + ": " + send);
 											client.send("#/to " + sender + " " + send);
 											client.send("Whisper to " + receiver + ": " + send);
+											System.out.println(sender + " to " + receiver + ": " + send);
 										} else {
 											client.send("-- Der Client \"" + receiver + "\" existiert nicht.");
 										}
@@ -230,7 +231,7 @@ class ClientInputHandler implements Runnable {
 								c.send(client.getUserName() + ": " + message);
 							}
 						}
-				}else{
+				} else {
 					break;
 				}
 			}
@@ -297,14 +298,14 @@ class ChatClient {
 		try {
 			message = in.readLine();
 		} catch (IOException e) {
-			System.out.println("Client "+userName+" lost Connection: "+ e.getMessage());
-			try{
+			System.out.println("Client " + userName + " lost Connection: " + e.getMessage());
+			try {
 				connection.close();
 				clientList.remove(this);
-				clientList.forEach(c-> c.send("-- "+ userName + " ist jetzt Offline."));
+				clientList.forEach(c -> c.send("-- " + userName + " ist jetzt Offline."));
 				return null;
-			}catch(IOException e1){
-				System.out.println("Unknown Error: "+e1.getMessage());
+			} catch (IOException e1) {
+				System.out.println("Unknown Error: " + e1.getMessage());
 			}
 		}
 		return message;
